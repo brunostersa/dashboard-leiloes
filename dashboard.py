@@ -30,7 +30,14 @@ def mostrar_dashboard():
     # Inicializa Firebase se necessário
     if not firebase_admin._apps:
         try:
-            cred = credentials.Certificate("leiloesdevproject-firebase-adminsdk-fbsvc-fb8c7e8d47.json")
+            if "firebase" in st.secrets:
+                # Estamos no Streamlit Cloud: pegar dados do secrets
+                firebase_info = dict(st.secrets["firebase"])
+                cred = credentials.Certificate(firebase_info)
+            else:
+                # Rodando localmente
+                cred = credentials.Certificate("leiloesdevproject-firebase-adminsdk-fbsvc-fb8c7e8d47.json")
+
             firebase_admin.initialize_app(cred, {
                 'databaseURL': 'https://leiloesdevproject-default-rtdb.firebaseio.com/'
             }, name="leiloes_app")
