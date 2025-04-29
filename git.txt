@@ -1,0 +1,4 @@
+git add .
+git add nomedoarquivo
+git commit -m "Mensagem de marcação"
+git push origin main
