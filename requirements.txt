@@ -4,5 +4,5 @@ setuptools
 gcloud
 firebase-admin
 pandas
-openpyxl
 matplotlib
+openpyxl
