@@ -1,0 +1,15 @@
+credentials:
+  usernames:
+    brunostersa:
+      name: Bruno Stersa
+      password: "$2b$12$kSJJqA1dTz8FzOTLZJi5zuV7MNiV0AmjKM00zWY2HOkxXAK6eTC1K"  # senha: 1234
+      email: brunostersa@gmail.com
+
+cookie:
+  expiry_days: 30
+  key: some_signature_key
+  name: streamlit_auth
+
+preauthorized:
+  emails:
+    - brunostersa@gmail.com
