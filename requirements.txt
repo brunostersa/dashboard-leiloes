@@ -1,6 +1,7 @@
 streamlit
+pyrebase4
+setuptools
+gcloud
 firebase-admin
 pandas
-plotly
 openpyxl
-pyrebase4
