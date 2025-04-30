@@ -110,6 +110,7 @@ def mostrar_dashboard():
     df = df[df["Score"] >= score_minimo]
     
     st.markdown("---")
+    
 
     # === KPIs ===
     st.subheader("📊 Indicadores")
