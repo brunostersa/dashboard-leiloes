@@ -108,6 +108,8 @@ def mostrar_dashboard():
     if lucro:
         df = df[df["Lucro Potencial"] > 0]
     df = df[df["Score"] >= score_minimo]
+    
+    st.markdown("---")
 
     # === KPIs ===
     st.subheader("📊 Indicadores")
@@ -118,28 +120,60 @@ def mostrar_dashboard():
     lucro_medio = financiaveis["Lucro Potencial"].sum() / len(financiaveis) if len(financiaveis) > 0 else 0
     col3.metric("💼 Lucro Médio (Financiáveis)", f'R$ {lucro_medio:,.2f}')
 
+    st.markdown("---")
 
-
-    # === Tabela Completa ===
+    # === Tabela Completa com Melhorias ===
     st.subheader("📋 Tabela Completa")
 
     # Ordenar do melhor Score para o pior
-    df = df.sort_values(by="Score", ascending=False)
-
     df_fmt = df[["Cidade", "Tipo", "Modalidade", "Aceita Financiamento", "Desconto", "Preço Avaliação", "Preço Venda", "Lucro Potencial", "Score", "Site"]].copy()
+    df_fmt = df_fmt.sort_values(by="Score", ascending=False)
 
-    # Não formatar Score antes do Styler
+    # Formatar valores numéricos
     for col in ["Desconto", "Preço Avaliação", "Preço Venda", "Lucro Potencial"]:
         if "Desconto" in col:
             df_fmt[col] = df_fmt[col].map("{:.2f}%".format)
         else:
             df_fmt[col] = df_fmt[col].map("R$ {:,.2f}".format)
 
-    # Coloração do Score com escala fixa 0–100 (verde = alto)
-    styled_df = df_fmt.style.format({"Score": "{:.2f}"}).background_gradient(
+
+
+    
+    # Paginação com botões e exibição por 200 registros
+    registros_por_pagina = 200
+    total_paginas = (len(df_fmt) - 1) // registros_por_pagina + 1
+
+    # Inicializa estado da página
+    if "pagina_tabela" not in st.session_state:
+        st.session_state.pagina_tabela = 1
+
+    col_pag1, col_pag2, col_pag3 = st.columns([1, 2, 1])
+    with col_pag1:
+        if st.button("⬅️ Anterior") and st.session_state.pagina_tabela > 1:
+            st.session_state.pagina_tabela -= 1
+    with col_pag2:
+        st.markdown(f"<p style='text-align:center;'>Página {st.session_state.pagina_tabela} de {total_paginas}</p>", unsafe_allow_html=True)
+    with col_pag3:
+        if st.button("Próxima ➡️") and st.session_state.pagina_tabela < total_paginas:
+            st.session_state.pagina_tabela += 1
+
+    inicio = (st.session_state.pagina_tabela - 1) * registros_por_pagina
+    fim = inicio + registros_por_pagina
+    df_paginado = df_fmt.iloc[inicio:fim]
+    
+    # Tabela Completa e estilo
+    styled_df_paginado = df_paginado.style.format({"Score": "{:.2f}"}).background_gradient(
         subset=["Score"], cmap="RdYlGn", vmin=0, vmax=100
     )
-    st.dataframe(styled_df, use_container_width=True)
+
+    st.dataframe(
+        styled_df_paginado,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Site": st.column_config.LinkColumn("🔗 Link")
+        }
+    )
 
     # === Gráfico: Top 10 cidades com mais imóveis ===
     st.subheader("🏙️ Top 10 Cidades com Mais Imóveis")
