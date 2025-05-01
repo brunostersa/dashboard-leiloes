@@ -91,7 +91,9 @@ def mostrar_dashboard():
     df = calcular_score(df)
 
     # === Filtros ===
-    modalidades, estados, cidades, tipos, desconto_range, financiamento, lucro, score_minimo = renderizar_filtros(df)
+    modalidades, estados, cidades, tipos, desconto_range, financiamento, lucro, score_minimo, preco_venda_range = renderizar_filtros(df)
+
+
 
     # === Aplicação dos filtros ===
     if modalidades:
@@ -107,6 +109,7 @@ def mostrar_dashboard():
         df = df[df["Aceita Financiamento"].str.upper() == "SIM"]
     if lucro:
         df = df[df["Lucro Potencial"] > 0]
+    df = df[(df["Preço Venda"] >= preco_venda_range[0]) & (df["Preço Venda"] <= preco_venda_range[1])]
     df = df[df["Score"] >= score_minimo]
     
     st.markdown("---")
@@ -123,8 +126,7 @@ def mostrar_dashboard():
 
     st.markdown("---")
 
-    # === Tabela Completa com Melhorias ===
-    st.subheader("📋 Tabela Completa")
+
 
     # Ordenar do melhor Score para o pior
     df_fmt = df[["Cidade", "Tipo", "Modalidade", "Aceita Financiamento", "Desconto", "Preço Avaliação", "Preço Venda", "Lucro Potencial", "Score", "Site"]].copy()
@@ -162,7 +164,11 @@ def mostrar_dashboard():
     fim = inicio + registros_por_pagina
     df_paginado = df_fmt.iloc[inicio:fim]
     
+    
+    
     # Tabela Completa e estilo
+    # === Tabela Completa com Melhorias ===
+    st.subheader("📋 Tabela Completa")
     styled_df_paginado = df_paginado.style.format({"Score": "{:.2f}"}).background_gradient(
         subset=["Score"], cmap="RdYlGn", vmin=0, vmax=100
     )
@@ -175,9 +181,10 @@ def mostrar_dashboard():
             "Site": st.column_config.LinkColumn("🔗 Link")
         }
     )
+    
 
     # === Gráfico: Top 10 cidades com mais imóveis ===
-    st.subheader("🏙️ Top 10 Cidades com Mais Imóveis")
+    
 
     top_cidades = df["Cidade"].value_counts().nlargest(10).reset_index()
     top_cidades.columns = ["Cidade", "Quantidade"]
@@ -187,11 +194,44 @@ def mostrar_dashboard():
         x="Quantidade",
         y="Cidade",
         orientation="h",
-        title="Top 10 Cidades com Mais Imóveis",
+        title="Top 10 Cidades ",
         text="Quantidade"
     )
     fig.update_layout(yaxis=dict(categoryorder="total ascending"))
     st.plotly_chart(fig, use_container_width=True)
+    
+    
+    # === Gráfico 2
+    top_cidades = df.groupby("Cidade")["Desconto"].mean().sort_values(ascending=False).head(5).reset_index()
+
+    fig = px.bar(
+        top_cidades,
+        x="Desconto",
+        y="Cidade",
+        orientation="h",
+        title="🏙️ Maiores Descontos Médios por Cidade",
+        text="Desconto",
+        labels={"Desconto": "Desconto (%)", "Cidade": "Cidade"}
+    )
+    fig.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
+    fig.update_layout(showlegend=False)  # barra simples não precisa de legenda de cor
+    st.plotly_chart(fig, use_container_width=True)
+    
+     # === Gráfico 3
+    lucro_tipo = df.groupby("Tipo")["Lucro Potencial"].mean().reset_index()
+
+    fig = px.bar(
+        lucro_tipo,
+        x="Tipo",
+        y="Lucro Potencial",
+        title="💰 Lucro Médio por Tipo de Imóvel",
+        text="Lucro Potencial",
+        labels={"Tipo": "Tipo de Imóvel", "Lucro Potencial": "Lucro (R$)"}
+    )
+    fig.update_traces(texttemplate='R$ %{text:,.0f}', textposition='outside')
+    fig.update_layout(showlegend=False)
+    st.plotly_chart(fig, use_container_width=True)
+
 
     # Exportar CSV
     csv = df.to_csv(index=False).encode('utf-8')

@@ -1,1 +1,0 @@
-# Placeholder — será substituído com conteúdo corrigido

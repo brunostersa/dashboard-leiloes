@@ -23,7 +23,7 @@ df["Permite FGTS"] = "Sim"
 df["Potencial"] = df["Desconto (%)"].apply(lambda x: "🔥 ALTO" if x >= 50 else ("👍 MÉDIO" if x >= 25 else "🧊 BAIXO"))
 
 # Layout
-st.set_page_config(page_title="Imóveis Caixa GO", layout="wide")
+
 st.title("🏠 Dashboard Estratégico - Imóveis Caixa Goiás")
 
 # Filtros

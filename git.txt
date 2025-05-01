@@ -1,4 +1,4 @@
 git add .
-git add nomedoarquivo
-git commit -m "Mensagem de marcação"
+git add dashboard.py
+git commit -m "Melhoria"
 git push origin main
