@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 pd.set_option("styler.render.max_elements", 600000)
-import plotly.express as px
 import os
 import firebase_admin
 from firebase_admin import credentials, db
@@ -9,6 +8,9 @@ from filtros_sidebar import renderizar_filtros
 from firebase_auth import exibir_login_cadastro
 from session_utils import limpar_sessao, carregar_usuario
 import plotly.express as px
+from matplotlib.colors import LinearSegmentedColormap
+
+
 
 # Função que exibe o conteúdo principal do dashboard
 def mostrar_dashboard():
@@ -182,6 +184,9 @@ def mostrar_dashboard():
         }
     )
     
+    # Exportar CSV
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button("⬇️ Exportar Resultados", csv, file_name="imoveis_filtrados.csv", mime="text/csv")
 
     # === Gráfico: Top 10 cidades com mais imóveis ===
     
@@ -231,10 +236,89 @@ def mostrar_dashboard():
     fig.update_traces(texttemplate='R$ %{text:,.0f}', textposition='outside')
     fig.update_layout(showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
+    
+    # Nova visao de pbi, tabela por modalidade v2
+    st.subheader("📊 Tabela de Modalidades por Cidade (com Cores e Totais)")
+
+    # Pivot
+    tabela = pd.pivot_table(
+        df,
+        index="Cidade",
+        columns="Modalidade",
+        values="Tipo",
+        aggfunc="count",
+        fill_value=0
+    )
+
+    # Total
+    tabela["Total"] = tabela.sum(axis=1)
+
+    # Ordenar
+    tabela = tabela.sort_values(by="Total", ascending=False)
+
+    # Emojis Top 3
+    top_cidades = tabela.index[:3]
+    emojis = ["🥇", "🥈", "🥉"]
+    renomear = {cidade: f"{emoji} {cidade}" for cidade, emoji in zip(top_cidades, emojis)}
+    tabela = tabela.rename(index=renomear)
+
+    # Reordena colunas
+    colunas_ordenadas = [col for col in tabela.columns if col != "Total"] + ["Total"]
+    tabela = tabela[colunas_ordenadas]
+
+    # Gradiente branco → azul
+    white_to_blue = LinearSegmentedColormap.from_list("white_to_blue", ["#ffffff", "#1f77b4"])
+
+    # Estilo: cores + ocultar zeros
+    styled_tabela = (
+        tabela.style
+        .background_gradient(cmap=white_to_blue)
+        .format(lambda x: "–" if x == 0 else f"{int(x)}")
+    )
+
+    # Exibição
+    st.dataframe(
+        styled_tabela,
+        use_container_width=True
+    )
 
 
-    # Exportar CSV
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button("⬇️ Exportar Resultados", csv, file_name="imoveis_filtrados.csv", mime="text/csv")
+    df_modalidade = df["Modalidade"].value_counts().reset_index()
+    df_modalidade.columns = ["Modalidade", "Quantidade"]
+
+    fig_modalidade = px.bar(
+        df_modalidade,
+        x="Modalidade", y="Quantidade",
+        title="📦 Quantidade de Imóveis por Modalidade",
+        color="Modalidade"
+    )
+    st.plotly_chart(fig_modalidade, use_container_width=True)
+
+
+    # === 3. Boxplot – Preço por Tipo de Imóvel
+    fig_box = px.box(
+        df, x="Tipo", y="Preço Venda",
+        title="💸 Distribuição de Preço de Venda por Tipo de Imóvel",
+        points="outliers"
+    )
+    st.plotly_chart(fig_box, use_container_width=True)
+
+    # === 4. Scatterplot – Score vs Lucro Potencial
+    fig_scatter = px.scatter(
+        df, x="Lucro Potencial", y="Score",
+        color="Tipo", hover_data=["Cidade", "Modalidade"],
+        title="🎯 Score vs Lucro Potencial"
+    )
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    # === 6. Histograma – Distribuição dos Descontos
+    fig_hist = px.histogram(
+        df, x="Desconto", nbins=20,
+        title="📉 Distribuição dos Descontos (%)"
+    )
+    st.plotly_chart(fig_hist, use_container_width=True)
+
+
+
 
 
